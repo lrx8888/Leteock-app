@@ -1,24 +1,12 @@
-# 自动安装所有依赖（解决Streamlit不读取requirements.txt的问题）
-import subprocess
-import sys
-subprocess.run(
-    [sys.executable, "-m", "pip", "install", "--quiet", 
-     "streamlit", "akshare", "pandas", "matplotlib"],
-    check=True
-)
-
-# 导入库
 import streamlit as st
 import akshare as ak
 import pandas as pd
 import matplotlib.pyplot as plt
 
 # -------------------------- 配置部分 --------------------------
-# 解决matplotlib中文乱码问题
 plt.rcParams["font.sans-serif"] = ["SimHei", "WenQuanYi Zen Hei", "Heiti TC"]
 plt.rcParams["axes.unicode_minus"] = False
 
-# 页面配置
 st.set_page_config(
     page_title="股票分析工具（永久免费版）",
     layout="wide",
@@ -27,11 +15,9 @@ st.set_page_config(
 
 # -------------------------- 主程序部分 --------------------------
 def main():
-    # 页面标题
     st.title("📈 股票分析工具（永久免费版）")
     st.markdown("---")
 
-    # 用户输入区
     col1, col2 = st.columns([3, 1])
     with col1:
         stock_code = st.text_input(
@@ -44,11 +30,9 @@ def main():
 
     st.markdown("---")
 
-    # 分析逻辑
     if analyze_btn:
         with st.spinner("🔄 正在加载数据中，请稍候..."):
             try:
-                # 1. 获取数据（AKShare免费接口，无Token限制）
                 df = ak.stock_zh_a_hist(
                     symbol=stock_code,
                     period="daily",
@@ -57,18 +41,15 @@ def main():
                     adjust="qfq"
                 )
 
-                # 2. 数据校验
                 if df.empty:
                     st.error("❌ 未获取到数据，请检查：\n1. 股票代码是否正确\n2. 网络是否正常")
                     return
 
-                # 3. 数据预处理
                 df["日期"] = pd.to_datetime(df["日期"])
                 df = df.sort_values("日期").reset_index(drop=True)
                 df["20日均线"] = df["收盘"].rolling(20).mean()
                 df["涨跌幅"] = df["收盘"].pct_change() * 100
 
-                # 4. 绘制股价走势图
                 st.subheader("📊 股价走势与20日均线")
                 fig, ax = plt.subplots(figsize=(12, 6))
                 ax.plot(df["日期"], df["收盘"], label="收盘价", color="#1f77b4", linewidth=2)
@@ -81,7 +62,6 @@ def main():
                 plt.xticks(rotation=45)
                 st.pyplot(fig, use_container_width=True)
 
-                # 5. 数据明细表格
                 st.subheader("📋 数据明细")
                 st.dataframe(
                     df[["日期", "开盘", "最高", "最低", "收盘", "成交量", "涨跌幅"]],
@@ -89,7 +69,6 @@ def main():
                     hide_index=True
                 )
 
-                # 6. 关键指标
                 st.subheader("📌 关键指标")
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
